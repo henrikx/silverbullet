@@ -189,6 +189,11 @@ export function NavRoot({
     expanded,
     readOnly,
     createBlocked,
+    // The page picker's plain row can give way to its `picker: true`
+    // template rows (it stays when there are none).
+    plainCreate:
+      view?.name !== "std.pages" ||
+      client.config.get<boolean>("pagePickerPlainCreate", true),
   });
 
   // A phrase edit, a segment switch or a dropdown pick is a deliberate change

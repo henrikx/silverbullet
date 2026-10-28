@@ -391,6 +391,43 @@ test.describe("page templates in the page picker", () => {
   });
 });
 
+test.describe("page templates in the page picker without the plain create row", () => {
+  test.use({
+    spaceFiles: {
+      ...templateFiles,
+      "CONFIG.md":
+        '```space-lua\nconfig.set("pagePickerPlainCreate", false)\n```\n',
+    },
+  });
+
+  test("only the template rows are offered", async ({ sbPage }) => {
+    const frame = await openPagePicker(sbPage);
+    await navInput(sbPage).fill("John");
+    await expect
+      .poll(() => createRows(frame), { timeout: 20_000 })
+      .toEqual(["John · Loose", "People/John · Person"]);
+  });
+});
+
+test.describe("the page picker without the plain create row or picker templates", () => {
+  test.use({
+    spaceFiles: {
+      "index.md": "Welcome",
+      "Templates/Unlisted.md": templateFiles["Templates/Unlisted.md"],
+      "CONFIG.md":
+        '```space-lua\nconfig.set("pagePickerPlainCreate", false)\n```\n',
+    },
+  });
+
+  test("still offers the plain row", async ({ sbPage }) => {
+    const frame = await openPagePicker(sbPage);
+    await navInput(sbPage).fill("John");
+    await expect
+      .poll(() => createRows(frame), { timeout: 20_000 })
+      .toEqual(["John · Create"]);
+  });
+});
+
 test.describe("space tree", () => {
   test.use({
     spaceFiles: {

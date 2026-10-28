@@ -95,6 +95,7 @@ export function useDerived({
   expanded,
   readOnly,
   createBlocked = readOnly,
+  plainCreate = true,
 }: {
   engine: NavigatorEngine;
   view?: ActiveView;
@@ -107,6 +108,9 @@ export function useDerived({
   expanded: Set<string>;
   readOnly: boolean;
   createBlocked?: boolean;
+  /** `false` drops the plain create row whenever a variant row is offered;
+   * with none, it stays, so a new name can always be created. */
+  plainCreate?: boolean;
 }): DerivedView {
   // Source mode: the source already answered this phrase and segment, in the
   // order it wants them shown -- ranking them again here would overrule it.
@@ -187,16 +191,19 @@ export function useDerived({
   );
   const createRows = useMemo(() => {
     if (!view || !createAllowed) return [];
-    const out: CreateRowSpec[] = [];
-    if (!existingNames.has(trimmedPhrase)) out.push({ name: trimmedPhrase });
+    const variants: CreateRowSpec[] = [];
     // A tree pins one create row below itself; variants are list-only.
-    if (view.meta.mode === "tree") return out;
-    for (const variant of view.createVariants ?? []) {
-      const name = createVariantName(variant, trimmedPhrase);
-      if (!existingNames.has(name)) out.push({ name, variant });
+    if (view.meta.mode !== "tree") {
+      for (const variant of view.createVariants ?? []) {
+        const name = createVariantName(variant, trimmedPhrase);
+        if (!existingNames.has(name)) variants.push({ name, variant });
+      }
     }
-    return out;
-  }, [view, createAllowed, existingNames, trimmedPhrase]);
+    const plain =
+      (plainCreate || variants.length === 0) &&
+      !existingNames.has(trimmedPhrase);
+    return plain ? [{ name: trimmedPhrase }, ...variants] : variants;
+  }, [view, createAllowed, plainCreate, existingNames, trimmedPhrase]);
   const canCreate = createRows.length > 0;
 
   /**

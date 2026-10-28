@@ -127,6 +127,13 @@ config.define("createInReadOnlyMode", {
   ui = { category = "Editor", label = "Create pages in read-only mode", priority = -3 },
 })
 
+config.define("pagePickerPlainCreate", {
+  description = "Offer the plain \"Create\" row in the page picker. Turn it off to create pages from the picker only through page templates with `picker: true`; it still shows when no such template row is offered",
+  type = "boolean",
+  default = true,
+  ui = { category = "Editor", label = "Plain create row in the page picker", priority = -4 },
+})
+
 config.define("linkWriteFormat", {
   description = "How SilverBullet writes wiki links it generates: 'shortest' uses the bare page name when that name is unique in the space and the full path when it is not, 'shortest-suffix' writes the shortest path suffix that still uniquely identifies the page instead of the full path, 'full-path' always writes the full path",
   type = "string",
