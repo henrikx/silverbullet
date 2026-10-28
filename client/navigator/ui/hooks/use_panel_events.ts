@@ -43,6 +43,8 @@ export function usePanelEvents({
 }): {
   currentName: string;
   readOnly: boolean;
+  /** Whether read-only mode hides the create row; see `createInReadOnlyMode`. */
+  createBlocked: boolean;
   mobile: boolean;
   /** The debounced source re-run, for the commands that want one promptly
    * (an action or a move that changed what the rows describe). */
@@ -52,6 +54,11 @@ export function usePanelEvents({
   // the way to the server. Re-derived whenever the editor reloads, which is
   // what a forced read-only toggle does.
   const [readOnly, setReadOnly] = useState(false);
+  // The forced toggle is only a client-side reading preference: the server
+  // still accepts writes, so `createInReadOnlyMode` can keep creating allowed.
+  // A read-only `system.getMode` (read-only server, frozen space, or a user
+  // without write access) always blocks it, whatever the setting says.
+  const [createBlocked, setCreateBlocked] = useState(false);
   const [currentName, setCurrentName] = useState(() => client.currentName());
   // Below the mobile breakpoint a sidebar dock is a full-width drawer over the
   // editor, so it behaves like the modal: it closes once you pick something,
@@ -108,6 +115,11 @@ export function usePanelEvents({
           editor.getUiOption("forcedROMode"),
         ]);
         setReadOnly(mode === "ro" || forced === true);
+        setCreateBlocked(
+          mode === "ro" ||
+            (forced === true &&
+              !client.config.get("createInReadOnlyMode", false)),
+        );
       } catch (e) {
         console.error("navigator: read-only check failed", e);
       }
@@ -247,5 +259,5 @@ export function usePanelEvents({
     activate.current(activation);
   }, [activation]);
 
-  return { currentName, readOnly, mobile, refresh };
+  return { currentName, readOnly, createBlocked, mobile, refresh };
 }

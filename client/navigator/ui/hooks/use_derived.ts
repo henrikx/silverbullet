@@ -78,6 +78,7 @@ export function useDerived({
   selectedPath,
   expanded,
   readOnly,
+  createBlocked = readOnly,
 }: {
   engine: NavigatorEngine;
   view?: ActiveView;
@@ -89,6 +90,7 @@ export function useDerived({
   selectedPath?: string;
   expanded: Set<string>;
   readOnly: boolean;
+  createBlocked?: boolean;
 }): DerivedView {
   // Source mode: the source already answered this phrase and segment, in the
   // order it wants them shown -- ranking them again here would overrule it.
@@ -159,9 +161,10 @@ export function useDerived({
   // Same trigger as FilterList's `allowNew`: a non-empty phrase that no row
   // already carries verbatim. Scanning `view.rows` (not `ranked`) keeps this
   // honest when the fuzzy ranker drops an exact match off the visible list.
+  // Read-only mode blocks it, unless `createInReadOnlyMode` allows it.
   const canCreate =
     !!view?.meta.hasCreate &&
-    !readOnly &&
+    !createBlocked &&
     trimmedPhrase.length > 0 &&
     !view.rows.some((r) => r.primary === trimmedPhrase);
 

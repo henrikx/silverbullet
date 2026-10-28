@@ -120,6 +120,13 @@ config.define("shortWikiLinks", {
   ui = { category = "Editor", label = "Short wiki links", priority = 1 },
 })
 
+config.define("createInReadOnlyMode", {
+  description = "Keep the create option in the page picker (and other navigator views) while read-only mode is toggled on in this client. Ignored when the space itself is read-only or you don't have write access to it",
+  type = "boolean",
+  default = false,
+  ui = { category = "Editor", label = "Create pages in read-only mode", priority = -3 },
+})
+
 config.define("linkWriteFormat", {
   description = "How SilverBullet writes wiki links it generates: 'shortest' uses the bare page name when that name is unique in the space and the full path when it is not, 'shortest-suffix' writes the shortest path suffix that still uniquely identifies the page instead of the full path, 'full-path' always writes the full path",
   type = "string",

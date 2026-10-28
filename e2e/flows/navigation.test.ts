@@ -234,6 +234,74 @@ test.describe("anchor navigation", () => {
   });
 });
 
+const readOnlyCreateFiles = {
+  "index.md": "Welcome",
+  "Brandy.md": "An existing page",
+};
+
+/** Turns on forced read-only mode, then types a phrase that matches `Brandy` but names no page. */
+async function pickerInForcedReadOnly(page: Page): Promise<Locator> {
+  await runCommandViaPalette(page, "Editor: Toggle Read Only Mode");
+  await expect(
+    page.locator("#sb-editor .cm-content[contenteditable='false']"),
+  ).toBeVisible();
+  const frame = await openPagePicker(page);
+  await navInput(page).fill("Brand");
+  await expect(navRows(frame).first()).toHaveText("Brandy", {
+    timeout: 20_000,
+  });
+  return frame;
+}
+
+test.describe("page picker in forced read-only mode", () => {
+  test.use({ spaceFiles: readOnlyCreateFiles });
+
+  test("offers no create row by default", async ({ sbPage }) => {
+    const frame = await pickerInForcedReadOnly(sbPage);
+    await expect(frame.locator(".sb-nav-create")).toHaveCount(0);
+  });
+});
+
+test.describe("page picker in forced read-only mode with createInReadOnlyMode", () => {
+  test.use({
+    spaceFiles: {
+      ...readOnlyCreateFiles,
+      "CONFIG.md":
+        '```space-lua\nconfig.set("createInReadOnlyMode", true)\n```\n',
+    },
+  });
+
+  test("offers the create row and opens the new page", async ({ sbPage }) => {
+    const frame = await pickerInForcedReadOnly(sbPage);
+    await expect(frame.locator(".sb-nav-create .sb-nav-primary")).toHaveText(
+      "Brand",
+    );
+    await navInput(sbPage).press("Shift+Enter");
+    await expect(currentPage(sbPage)).toHaveValue("Brand");
+    await expect(sbPage.locator(".sb-modal")).toBeHidden();
+  });
+});
+
+test.describe("page picker on a read-only server with createInReadOnlyMode", () => {
+  test.use({
+    serverEnv: { SB_READ_ONLY: "1" },
+    spaceFiles: {
+      ...readOnlyCreateFiles,
+      "CONFIG.md":
+        '```space-lua\nconfig.set("createInReadOnlyMode", true)\n```\n',
+    },
+  });
+
+  test("still offers no create row", async ({ sbPage }) => {
+    const frame = await openPagePicker(sbPage);
+    await navInput(sbPage).fill("Brand");
+    await expect(navRows(frame).first()).toHaveText("Brandy", {
+      timeout: 20_000,
+    });
+    await expect(frame.locator(".sb-nav-create")).toHaveCount(0);
+  });
+});
+
 test.describe("space tree", () => {
   test.use({
     spaceFiles: {

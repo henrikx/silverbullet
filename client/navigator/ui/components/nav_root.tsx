@@ -130,15 +130,16 @@ export function NavRoot({
     if (state) setView({ name: state.meta.name, ...state });
   }, []);
 
-  const { currentName, readOnly, mobile, refresh } = usePanelEvents({
-    slot,
-    client,
-    engine,
-    activation,
-    refs,
-    set,
-    publish,
-  });
+  const { currentName, readOnly, createBlocked, mobile, refresh } =
+    usePanelEvents({
+      slot,
+      client,
+      engine,
+      activation,
+      refs,
+      set,
+      publish,
+    });
 
   const hasContent = view?.meta.hasContent === true;
   const NativeBody = view ? nativeBody(view.name) : undefined;
@@ -187,6 +188,7 @@ export function NavRoot({
     selectedPath,
     expanded,
     readOnly,
+    createBlocked,
   });
 
   // A phrase edit, a segment switch or a dropdown pick is a deliberate change
