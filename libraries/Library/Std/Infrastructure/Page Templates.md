@@ -26,6 +26,7 @@ Optional keys you can set in the page’s frontmatter:
   (`frontmatter: |`) so that the value is passed as a string and `${...}` Lua interpolation
   works. A nested YAML mapping is also accepted (and serialized verbatim), but interpolation
   will be skipped in that case.
+* `picker`: Set to `true` to offer this template in the page picker. When the typed name doesn't exist yet, the picker shows an extra create row labelled with the template's name, which creates the page from this template right away (without asking for the name again). If `suggestedName` has a folder, like `People/${...}`, that folder is put in front of the typed name, so typing `John` offers `People/John`.
 * `priority`: Similar to how space lua scripts are loaded, this controls the order in which page template _commands_ are
   created (see "overriding page templates" below)
 
@@ -98,6 +99,7 @@ tag.define {
       suggestedName = schema.string(),
       confirmName = schema.boolean(),
       openIfExists = schema.boolean(),
+      picker = schema.boolean(),
       command = schema.string(),
       key = {
         anyOf = {
@@ -195,6 +197,34 @@ local function instantiateTemplate(fullName, suggestedName, openIfExists)
     return
   end
   template.createPageFromTemplate(fullName, pageName, openIfExists)
+end
+
+-- The page picker's extra create rows (its `createVariants`): one per
+-- template with `picker: true`, prefixed with the folder of its evaluated
+-- `suggestedName`. A template whose `suggestedName` fails to evaluate is
+-- still offered, just without a prefix.
+function template.pickerVariants()
+  local variants = {}
+  for pt in query[[
+      from pt = index.pages("meta/template/page")
+      where pt.picker == true
+      order by pt.name
+    ]] do
+    local prefix
+    if pt.suggestedName then
+      local ok, name = pcall(template.new(pt.suggestedName))
+      if ok and type(name) == "string" then
+        prefix = string.match(name, "^(.*/)")
+      end
+    end
+    table.insert(variants, {
+      label = cleanName(pt.name),
+      prefix = prefix,
+      icon = "file-plus",
+      value = { template = pt.name, openIfExists = pt.openIfExists == true },
+    })
+  end
+  return variants
 end
 
 navigator.define {

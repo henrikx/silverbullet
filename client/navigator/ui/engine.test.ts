@@ -625,3 +625,71 @@ test("a rows load remembers what its source read", async () => {
   await engine.activate("v");
   expect(engine.activeState()!.tracked).toEqual(["index:tag:page"]);
 });
+
+test("create variants load with the rows, keeping only labelled entries", async () => {
+  handle.mockImplementation((payload: any) => {
+    if (payload.hook === "meta") {
+      return Promise.resolve(
+        meta({ hasCreate: true, hasCreateVariants: true }),
+      );
+    }
+    if (payload.hook === "rows") {
+      return Promise.resolve([{ obj: { name: "a" }, primary: "a" }]);
+    }
+    if (payload.hook === "createVariants") {
+      return Promise.resolve([
+        { label: "Person", prefix: "People/", value: { template: "T" } },
+        { label: "" },
+        null,
+      ]);
+    }
+    return Promise.resolve(undefined);
+  });
+
+  const state = await new NavigatorEngine().activate("v");
+
+  expect(state.rows).toHaveLength(1);
+  expect(state.createVariants).toEqual([
+    {
+      label: "Person",
+      prefix: "People/",
+      icon: undefined,
+      value: { template: "T" },
+      iconNode: undefined,
+    },
+  ]);
+});
+
+test("failing create variants still load the rows", async () => {
+  handle.mockImplementation((payload: any) => {
+    if (payload.hook === "meta") {
+      return Promise.resolve(
+        meta({ hasCreate: true, hasCreateVariants: true }),
+      );
+    }
+    if (payload.hook === "rows") {
+      return Promise.resolve([{ obj: { name: "a" }, primary: "a" }]);
+    }
+    if (payload.hook === "createVariants") {
+      return Promise.reject(new Error("boom"));
+    }
+    return Promise.resolve(undefined);
+  });
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+  const state = await new NavigatorEngine().activate("v");
+
+  expect(state.rows).toHaveLength(1);
+  expect(state.createVariants).toEqual([]);
+  error.mockRestore();
+});
+
+test("create hands the picked variant to the view", async () => {
+  const variant = { label: "Person", prefix: "People/", value: "T" };
+  await new NavigatorEngine("modal").create("v", "People/John", variant);
+  expect(handle).toHaveBeenCalledWith({
+    view: "v",
+    hook: "create",
+    args: { phrase: "People/John", variant },
+  });
+});

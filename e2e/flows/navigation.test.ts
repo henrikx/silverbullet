@@ -302,6 +302,95 @@ test.describe("page picker on a read-only server with createInReadOnlyMode", () 
   });
 });
 
+const templateFiles = {
+  "index.md": "Welcome",
+  "People/Ann.md": "Ann's page",
+  "Templates/Person.md":
+    "---\ntags: meta/template/page\npicker: true\n" +
+    "suggestedName: \"People/${os.date('%Y')}\"\n---\nPerson body\n",
+  "Templates/Loose.md":
+    "---\ntags: meta/template/page\npicker: true\n---\nLoose body\n",
+  "Templates/Unlisted.md": "---\ntags: meta/template/page\n---\nUnlisted\n",
+};
+
+/** The create rows' names and chips, in order. */
+async function createRows(frame: Locator) {
+  return frame
+    .locator(".sb-nav-create")
+    .evaluateAll((rows) =>
+      rows.map(
+        (row) =>
+          `${row.querySelector(".sb-nav-primary")?.textContent} · ${row.querySelector(".sb-nav-chip-hint")?.textContent}`,
+      ),
+    );
+}
+
+test.describe("page templates in the page picker", () => {
+  test.use({ spaceFiles: templateFiles });
+
+  test("picker templates add labelled create rows under the plain one", async ({
+    sbPage,
+  }) => {
+    const frame = await openPagePicker(sbPage);
+    await navInput(sbPage).fill("John");
+    await expect
+      .poll(() => createRows(frame), { timeout: 20_000 })
+      .toEqual(["John · Create", "John · Loose", "People/John · Person"]);
+  });
+
+  test("a template row is hidden when its page exists", async ({ sbPage }) => {
+    const frame = await openPagePicker(sbPage);
+    await navInput(sbPage).fill("Ann");
+    await expect
+      .poll(() => createRows(frame), { timeout: 20_000 })
+      .toEqual(["Ann · Create", "Ann · Loose"]);
+  });
+
+  test("picking a template row creates the page from the template", async ({
+    sbPage,
+  }) => {
+    const frame = await openPagePicker(sbPage);
+    await navInput(sbPage).fill("John");
+    const row = frame.locator(".sb-nav-create-variant", {
+      hasText: "People/John",
+    });
+    await expect(row).toBeVisible({ timeout: 20_000 });
+    await row.click();
+
+    await expect(currentPage(sbPage)).toHaveValue("People/John");
+    await expect(sbPage.locator("#sb-editor .cm-content")).toContainText(
+      "Person body",
+    );
+  });
+
+  test("Shift-Enter still creates the plain page", async ({ sbPage }) => {
+    const frame = await openPagePicker(sbPage);
+    await navInput(sbPage).fill("John");
+    await expect(frame.locator(".sb-nav-create-variant").first()).toBeVisible({
+      timeout: 20_000,
+    });
+    await navInput(sbPage).press("Shift+Enter");
+
+    await expect(currentPage(sbPage)).toHaveValue("John");
+    await expect(sbPage.locator("#sb-editor .cm-content")).not.toContainText(
+      "body",
+    );
+  });
+
+  test("read-only mode hides the template rows too", async ({ sbPage }) => {
+    await runCommandViaPalette(sbPage, "Editor: Toggle Read Only Mode");
+    await expect(
+      sbPage.locator("#sb-editor .cm-content[contenteditable='false']"),
+    ).toBeVisible();
+    const frame = await openPagePicker(sbPage);
+    await navInput(sbPage).fill("People/A");
+    await expect(navRows(frame).first()).toHaveText("People/Ann", {
+      timeout: 20_000,
+    });
+    await expect(frame.locator(".sb-nav-create")).toHaveCount(0);
+  });
+});
+
 test.describe("space tree", () => {
   test.use({
     spaceFiles: {

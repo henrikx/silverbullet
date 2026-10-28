@@ -21,7 +21,7 @@ export function ListView({
   onSelect,
   onAction,
 }: {
-  /** An `undefined` entry is the create row's slot -- see `createRow`. */
+  /** An `undefined` entry is a create row's slot -- see `createRow`. */
   rows: (RankedRow | undefined)[];
   selectedIndex: number;
   showEmpty: boolean;
@@ -34,11 +34,11 @@ export function ListView({
   /** The phrase ranking rows, for matched-character highlighting -- undefined while it's empty. */
   phrase?: string;
   /**
-   * Renders the create row, which the list holds a slot for rather than
-   * appending: it belongs *second*, under the best match, so one ArrowDown
-   * from the top row means "create it instead".
+   * Renders the create row at list index `index`, which the list holds a slot
+   * for rather than appending: it belongs *second*, under the best match, so
+   * one ArrowDown from the top row means "create it instead".
    */
-  createRow?: (selected: boolean) => ComponentChildren;
+  createRow?: (selected: boolean, index: number) => ComponentChildren;
   onSelect?: (index: number) => void;
   onAction: (index: number, actionIndex: number) => void;
 }) {
@@ -81,7 +81,9 @@ export function ListView({
     >
       {rows.map((entry, i) =>
         entry === undefined ? (
-          <Fragment key="create">{createRow?.(i === selectedIndex)}</Fragment>
+          <Fragment key={`create-${i}`}>
+            {createRow?.(i === selectedIndex, i)}
+          </Fragment>
         ) : (
           <RowItem
             key={i}

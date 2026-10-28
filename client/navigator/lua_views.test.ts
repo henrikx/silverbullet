@@ -337,6 +337,7 @@ test("a fully defaulted spec projects the meta the panel expects", () => {
     hasMove: false,
     uploadFiles: false,
     hasCreate: false,
+    hasCreateVariants: false,
     refreshOnOpen: false,
     rememberPhrase: false,
     keys: undefined,
@@ -1376,4 +1377,50 @@ test("source views get dropdown options without per-row masks, and see ctx.dropd
     ctx: { phrase: "f", dropdown: "phrase" },
   });
   expect(rows[0].primary).toBe("phrase");
+});
+
+test("createVariants projects into the meta only alongside onCreate", () => {
+  const variants = "createVariants = function() return {} end";
+  expect(
+    wireMeta(
+      luaSpec(
+        `{ name = "v", ${SOURCE}, ${ON_SELECT}, onCreate = function() end, ${variants} }`,
+      ),
+    ).hasCreateVariants,
+  ).toBe(true);
+  expect(
+    wireMeta(luaSpec(`{ name = "v", ${SOURCE}, ${ON_SELECT}, ${variants} }`))
+      .hasCreateVariants,
+  ).toBe(false);
+});
+
+test("the createVariants hook passes the phrase and skips unlabelled entries", async () => {
+  const spec = luaSpec(`{
+    name = "v",
+    ${SOURCE},
+    ${ON_SELECT},
+    onCreate = function() end,
+    createVariants = function(ctx)
+      return {
+        { label = "Person", prefix = "People/", icon = "user", value = { template = "T/Person" } },
+        { label = "" },
+        { prefix = "Nowhere/" },
+        { label = "For " .. ctx.phrase, prefix = 42 },
+      }
+    end,
+  }`);
+
+  const variants = await luaHandle(spec, "createVariants", {
+    ctx: { phrase: "John" },
+  });
+
+  expect(variants).toEqual([
+    {
+      label: "Person",
+      prefix: "People/",
+      icon: "user",
+      value: { template: "T/Person" },
+    },
+    { label: "For John" },
+  ]);
 });

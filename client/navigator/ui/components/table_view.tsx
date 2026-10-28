@@ -70,7 +70,7 @@ export function TableView({
   readOnly?: boolean;
   actionsDisabled?: boolean;
   onAction?: (index: number, action: number) => void | Promise<void>;
-  createRow?: (selected: boolean) => ComponentChildren;
+  createRow?: (selected: boolean, index: number) => ComponentChildren;
 }) {
   const selectedRef = useRef<HTMLTableRowElement>(null);
   const [busy, setBusy] = useState(false);
@@ -125,9 +125,9 @@ export function TableView({
           {rows.map((row, index) => {
             if (!row)
               return (
-                <tr key="create">
+                <tr key={`create-${index}`}>
                   <td colSpan={columns.length + (actions?.length ? 1 : 0)}>
-                    {createRow?.(index === selectedIndex)}
+                    {createRow?.(index === selectedIndex, index)}
                   </td>
                 </tr>
               );

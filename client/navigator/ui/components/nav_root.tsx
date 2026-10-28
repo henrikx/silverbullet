@@ -220,6 +220,24 @@ export function NavRoot({
     }
   }, [derived.createSelected]);
 
+  /** A list's create row at list index `index` (see `createIndex`). */
+  const renderCreateRow = (selected: boolean, index: number) => {
+    const slot = index - derived.createIndex;
+    const row = derived.createRows[slot];
+    if (!view || !row) return null;
+    return (
+      <CreateRow
+        phrase={row.name}
+        label={row.variant?.label}
+        icon={row.variant?.iconNode ?? view.createIcon}
+        hasIcon={!!view.meta.hasRowIcon || !!row.variant?.iconNode}
+        selected={selected}
+        elRef={selected ? createRef : undefined}
+        onClick={() => void cmd.runCreate(slot)}
+      />
+    );
+  };
+
   const cmd = createCommands({
     slot,
     view,
@@ -645,20 +663,7 @@ export function NavRoot({
               const row = listItems[index]?.row;
               return row ? cmd.runAction(action, row.obj) : undefined;
             }}
-            createRow={
-              createIndex < 0
-                ? undefined
-                : (selected) => (
-                    <CreateRow
-                      phrase={trimmedPhrase}
-                      icon={view.createIcon}
-                      hasIcon={!!view.meta.hasRowIcon}
-                      selected={selected}
-                      elRef={selected ? createRef : undefined}
-                      onClick={() => void cmd.runCreate()}
-                    />
-                  )
-            }
+            createRow={createIndex < 0 ? undefined : renderCreateRow}
           />
         ) : view ? (
           <ListView
@@ -672,20 +677,7 @@ export function NavRoot({
             hasIcon={!!view.meta.hasRowIcon}
             readOnly={readOnly}
             phrase={trimmedPhrase ? rankPhrase : undefined}
-            createRow={
-              createIndex < 0
-                ? undefined
-                : (selected) => (
-                    <CreateRow
-                      phrase={trimmedPhrase}
-                      icon={view.createIcon}
-                      hasIcon={!!view.meta.hasRowIcon}
-                      selected={selected}
-                      elRef={selected ? createRef : undefined}
-                      onClick={() => void cmd.runCreate()}
-                    />
-                  )
-            }
+            createRow={createIndex < 0 ? undefined : renderCreateRow}
             onSelect={
               view.meta.hasSelect !== false
                 ? (i) => void cmd.selectRow(i)

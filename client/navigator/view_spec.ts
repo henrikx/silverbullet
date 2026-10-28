@@ -616,6 +616,9 @@ export function wireMeta(spec: ViewSpec): ViewMeta {
     hasMove: present(field(spec, "onMove")),
     uploadFiles: field(p, "uploadFiles") === true,
     hasCreate: present(field(spec, "onCreate")),
+    hasCreateVariants:
+      present(field(spec, "onCreate")) &&
+      present(field(spec, "createVariants")),
     refreshOnOpen: field(spec, "refreshOnOpen") === true,
     rememberPhrase: field(spec, "rememberPhrase") === true,
     keys: keymapKeys(spec),
@@ -752,6 +755,7 @@ const PICK_CONTENT_FIELDS = [
   "label",
   "search",
   "onCreate",
+  "createVariants",
   "actions",
   "keymap",
 ];

@@ -28,6 +28,7 @@ Optional keys you can set in the page’s frontmatter:
 * `frontmatter`: Frontmatter to set in the resulting page. Use a YAML literal block scalar (`frontmatter: |`) so that the value is passed as a string and `${...}` Lua interpolation
   works. A nested YAML mapping is also accepted (and serialized verbatim), but interpolation
   will be skipped in that case.
+* `picker`: Set to `true` to offer the template in the page picker (see "Instantiating page templates" below).
 * `priority`: Similar to how space lua scripts are loaded, this controls the order in which page template _commands_ are
   created (see "overriding page templates" below)
 
@@ -53,6 +54,8 @@ ${query[[
 
 # Instantiating page templates
 You can create a page based on a page template via the ${widgets.commandButton("Page: From Template")} command, or via the command name that you defined in your template’s frontmatter.
+
+Templates with `picker: true` are also offered in the page picker. When you type the name of a page that doesn't exist yet, the picker adds a create row per template, right under its plain "Create" row and labelled with the template's name. Picking one creates the page from that template straight away, without asking for the name again. If the template's `suggestedName` has a folder, the typed name goes into that folder: with `suggestedName: "People/${date.today()}"`, typing `John` offers `People/John`. Like the plain "Create" row, these rows are hidden in read-only mode, unless "Create pages in read-only mode" (`createInReadOnlyMode`) is on in the [[Configuration Manager]].
 
 # Overriding page templates
 If you would like to override an existing page template (for instance the Quick Note) template with your own, you can take advantage of the load order determined by the `priority` frontmatter. Built in page templates will have a priority set that is higher than the default. Therefore, their commands and keybindings will be set early. Therefore, by simply defining your own version of the page template _with the same command name_ will let that version override the versions that are built in.

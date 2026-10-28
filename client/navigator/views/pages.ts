@@ -8,6 +8,7 @@ import {
 import {
   editor,
   index,
+  lua,
   space,
   system,
 } from "@silverbulletmd/silverbullet/syscalls";
@@ -17,7 +18,7 @@ import type {
   ObjectValue,
 } from "@silverbulletmd/silverbullet/type/index";
 import { parsePageMetaLastModified } from "../../lib/page_meta.ts";
-import type { Decoration } from "../types.ts";
+import type { CreateVariant, Decoration } from "../types.ts";
 import { type BuiltinView, baseMeta } from "./types.ts";
 
 /** A page or document from the index (or its pre-index file-listing
@@ -231,6 +232,40 @@ function spaceIcon(obj: PageObj): string {
   return "file-text";
 }
 
+/** `s` as a Lua long-bracket string literal, with a level `s` can't close. */
+export function luaStringLiteral(s: string): string {
+  for (let level = 0; ; level++) {
+    const close = `]${"=".repeat(level)}]`;
+    // Also rules out `s` ending in a partial close, like `a]` at level 0.
+    if ((s + close).indexOf(close) === s.length) {
+      return `[${"=".repeat(level)}[${s}${close}`;
+    }
+  }
+}
+
+/**
+ * The page templates marked `picker: true`, from the Page Templates library
+ * (`template.pickerVariants`). A space without that library function just
+ * gets no extra rows.
+ */
+async function templateVariants(): Promise<CreateVariant[]> {
+  const result = await lua.evalExpression(
+    "template.pickerVariants and template.pickerVariants() or {}",
+  );
+  return Array.isArray(result) ? result : [];
+}
+
+async function createFromTemplate(name: string, variant: CreateVariant) {
+  const { template, openIfExists } = (variant.value ?? {}) as {
+    template?: string;
+    openIfExists?: boolean;
+  };
+  if (typeof template !== "string") return;
+  await lua.evalExpression(
+    `template.createPageFromTemplate(${luaStringLiteral(template)}, ${luaStringLiteral(name)}, ${openIfExists === true})`,
+  );
+}
+
 export const pagePicker: BuiltinView<PageObj> = {
   meta: baseMeta({
     title: "Pages",
@@ -318,7 +353,9 @@ export const pagePicker: BuiltinView<PageObj> = {
   // you back where you left it. A create is a fresh page and has nothing to
   // restore.
   onSelect: (obj) => editor.open(obj.ref ?? obj.name),
-  onCreate: async (phrase) => {
+  createVariants: templateVariants,
+  onCreate: async (phrase, variant) => {
+    if (variant) return await createFromTemplate(phrase, variant);
     if (isValidName(phrase)) {
       const path = parseToRef(phrase)!.path;
       if (!isMarkdownPath(path) && !(await space.fileExists(path))) {

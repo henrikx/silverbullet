@@ -7,7 +7,7 @@ import {
   LuaStackFrame,
   luaValueToJS,
 } from "../space_lua/runtime.ts";
-import type { DropdownOption, NavigatorHook } from "./types.ts";
+import type { CreateVariant, DropdownOption, NavigatorHook } from "./types.ts";
 
 import {
   field,
@@ -210,6 +210,42 @@ async function rowState(
  * at define time, so a dynamic set stays fresh), and every row is masked
  * against every option's value, failing predicates closed.
  */
+/** `createVariants(ctx)`: a list of `{ label, prefix?, icon?, value? }`. */
+async function createVariants(
+  sf: LuaStackFrame,
+  spec: ViewSpec,
+  args: any,
+): Promise<CreateVariant[] | undefined> {
+  const fn = field(spec, "createVariants");
+  if (luaType(fn) !== "function") return undefined;
+  const incoming = args.ctx ?? {};
+  let listed: unknown;
+  try {
+    listed = await callLua(sf, fn as ILuaFunction, {
+      phrase: incoming.phrase ?? "",
+      segment: incoming.segment,
+      dock: incoming.dock,
+    });
+  } catch (e) {
+    console.error("navigator: createVariants failed", e);
+    return [];
+  }
+  const variants: CreateVariant[] = [];
+  for (const entry of sequence(listed)) {
+    const label = field(entry, "label");
+    if (luaType(label) !== "string" || label === "") continue;
+    const prefix = field(entry, "prefix");
+    const icon = field(entry, "icon");
+    variants.push({
+      label,
+      prefix: luaType(prefix) === "string" ? prefix : undefined,
+      icon: luaType(icon) === "string" ? icon : undefined,
+      value: toJS(field(entry, "value")),
+    });
+  }
+  return variants;
+}
+
 async function dropdownState(
   sf: LuaStackFrame,
   spec: ViewSpec,
@@ -385,10 +421,14 @@ async function runHook(
       const onCreate = field(spec, "onCreate");
       if (!truthy(onCreate)) return undefined;
       await runHandler("onCreate", () =>
-        callLua(sf, onCreate as ILuaFunction, args.phrase),
+        args.variant
+          ? callLua(sf, onCreate as ILuaFunction, args.phrase, args.variant)
+          : callLua(sf, onCreate as ILuaFunction, args.phrase),
       );
       return undefined;
     }
+    case "createVariants":
+      return await createVariants(sf, spec, args);
     case "key": {
       const keymap = field(spec, "keymap");
       const fn = truthy(keymap) ? field(keymap, args.key) : undefined;

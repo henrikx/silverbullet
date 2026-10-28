@@ -92,6 +92,7 @@ export function builtinMeta(name: string): ViewMeta | undefined {
     name,
     builtin: true,
     hasMove: !!view.onMove,
+    hasCreateVariants: !!view.createVariants,
     keys: view.keymap ? Object.keys(view.keymap) : undefined,
     actions: view.actions?.map((action) => ({
       icon: action.icon,
@@ -231,7 +232,19 @@ export async function builtinHandle(
     case "create": {
       const view = views[name];
       if (!view?.onCreate) return undefined;
-      return await runHandler("onCreate", () => view.onCreate!(args.phrase));
+      return await runHandler("onCreate", () =>
+        view.onCreate!(args.phrase, args.variant),
+      );
+    }
+    case "createVariants": {
+      const view = views[name];
+      if (!view?.createVariants) return undefined;
+      try {
+        return await view.createVariants(args.ctx ?? { phrase: "" });
+      } catch (e) {
+        console.error(`navigator ${name}: createVariants failed`, e);
+        return [];
+      }
     }
     case "key": {
       const fn = views[name]?.keymap?.[args.key];

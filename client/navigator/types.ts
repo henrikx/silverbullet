@@ -18,6 +18,7 @@ export type NavigatorHook =
   | "content"
   | "select"
   | "create"
+  | "createVariants"
   | "key"
   | "action"
   | "rowState"
@@ -44,6 +45,28 @@ export type DropdownOption = {
   label: string;
   value: any;
 };
+
+/**
+ * An extra create row a view offers next to the plain one, e.g. "create this
+ * page from the Person template". Its row creates `prefix` + the phrase.
+ */
+export type CreateVariant = {
+  label: string;
+  /** Prepended to the phrase, unless the phrase already starts with it. */
+  prefix?: string;
+  icon?: string;
+  /** Opaque to the panel; handed back to `onCreate` with the variant. */
+  value?: unknown;
+};
+
+/** The name a variant's create row creates for `phrase`. */
+export function createVariantName(
+  variant: Pick<CreateVariant, "prefix">,
+  phrase: string,
+): string {
+  const prefix = variant.prefix ?? "";
+  return phrase.startsWith(prefix) ? phrase : prefix + phrase;
+}
 
 export type SourceCtx = {
   phrase: string;
@@ -110,6 +133,8 @@ export type ViewMeta = {
   hasMove: boolean;
   uploadFiles?: boolean;
   hasCreate: boolean;
+  /** The view offers extra create rows (`createVariants`) under the plain one. */
+  hasCreateVariants?: boolean;
   refreshOnOpen: boolean;
   /** A modal open without a phrase starts from the phrase this view last
    * queried in this tab (in memory only), selected so typing replaces it. */

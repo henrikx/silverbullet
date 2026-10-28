@@ -6,7 +6,11 @@ import {
   type TreeNode,
   type VisibleRow,
 } from "../../../../plug-api/ui/tree_model.ts";
-import type { SegmentMeta } from "../../types.ts";
+import {
+  type CreateVariant,
+  createVariantName,
+  type SegmentMeta,
+} from "../../types.ts";
 import { applyDropdown, dropdownIndexFor } from "../dropdown.ts";
 import type { NavigatorEngine, RankedRow } from "../engine.ts";
 import { type RankCacheEntry, rankIncrementally } from "../incremental_rank.ts";
@@ -27,6 +31,13 @@ export const CREATE_PATH = "\u0000create";
 const POINTER_FINE =
   globalThis.matchMedia?.("(pointer: fine)").matches ?? false;
 
+/** One create row: the plain one, or one of the view's `createVariants`. */
+export type CreateRowSpec = {
+  /** What it creates: the phrase, or the variant's name for it. */
+  name: string;
+  variant?: CreateVariant & { iconNode?: Element };
+};
+
 /**
  * Everything the panel shows, and everything its keys and commands act on,
  * derived from the active view and the four pieces of input state (phrase,
@@ -44,10 +55,15 @@ export type DerivedView = {
   visible: RankedRow[];
   /** `visible` with the create slot spliced in, as the list actually renders. */
   listItems: (RankedRow | undefined)[];
-  /** The ranked row at a list index; undefined when that index is the create row. */
+  /** The ranked row at a list index; undefined when that index is a create row. */
   rowAtIndex: (index: number) => RankedRow | undefined;
   canCreate: boolean;
+  /** The create rows, in order; a tree only ever gets the plain one. */
+  createRows: CreateRowSpec[];
+  /** List index of the first create row; -1 in a tree or without any. */
   createIndex: number;
+  /** Which of `createRows` is selected, or -1. */
+  createSlot: number;
   createSelected: boolean;
   createSelectedInTree: boolean;
   activeIndex: number;
@@ -162,20 +178,34 @@ export function useDerived({
   // already carries verbatim. Scanning `view.rows` (not `ranked`) keeps this
   // honest when the fuzzy ranker drops an exact match off the visible list.
   // Read-only mode blocks it, unless `createInReadOnlyMode` allows it.
-  const canCreate =
-    !!view?.meta.hasCreate &&
-    !createBlocked &&
-    trimmedPhrase.length > 0 &&
-    !view.rows.some((r) => r.primary === trimmedPhrase);
+  // Each variant row follows the same rule for its own name.
+  const createAllowed =
+    !!view?.meta.hasCreate && !createBlocked && trimmedPhrase.length > 0;
+  const existingNames = useMemo(
+    () => new Set(view?.rows.map((r) => r.primary)),
+    [view?.rows],
+  );
+  const createRows = useMemo(() => {
+    if (!view || !createAllowed) return [];
+    const out: CreateRowSpec[] = [];
+    if (!existingNames.has(trimmedPhrase)) out.push({ name: trimmedPhrase });
+    // A tree pins one create row below itself; variants are list-only.
+    if (view.meta.mode === "tree") return out;
+    for (const variant of view.createVariants ?? []) {
+      const name = createVariantName(variant, trimmedPhrase);
+      if (!existingNames.has(name)) out.push({ name, variant });
+    }
+    return out;
+  }, [view, createAllowed, existingNames, trimmedPhrase]);
+  const canCreate = createRows.length > 0;
 
-  const lastIndex = visible.length - 1 + (canCreate ? 1 : 0);
-  const activeIndex = Math.min(selectedIndex, Math.max(0, lastIndex));
   /**
-   * Where the create row sits among the list's rows: **second**, right under
+   * Where the create rows sit among the list's rows: **second**, right under
    * the best match, which is where `FilterList` spliced it and what makes
    * one ArrowDown from the top mean "create it instead". With nothing
-   * matching it is the only row there is, so it is first. (A tree keeps its
-   * own pinned-below-the-tree placement -- see the render.)
+   * matching they are the only rows there are, so they come first. Variant
+   * rows follow the plain one. (A tree keeps its own pinned-below-the-tree
+   * placement -- see the render.)
    */
   const createIndex =
     !canCreate || view?.meta.mode === "tree"
@@ -183,16 +213,25 @@ export function useDerived({
       : visible.length === 0
         ? 0
         : 1;
+  const createCount = createIndex < 0 ? 0 : createRows.length;
+  const lastIndex = visible.length - 1 + createCount;
+  const activeIndex = Math.min(selectedIndex, Math.max(0, lastIndex));
   const rowAtIndex = (index: number) =>
-    index === createIndex
+    createIndex >= 0 &&
+    index >= createIndex &&
+    index < createIndex + createCount
       ? undefined
-      : visible[createIndex >= 0 && index > createIndex ? index - 1 : index];
+      : visible[
+          createIndex >= 0 && index >= createIndex + createCount
+            ? index - createCount
+            : index
+        ];
   const listItems = useMemo(() => {
     if (createIndex < 0) return visible;
     const out: (RankedRow | undefined)[] = [...visible];
-    out.splice(createIndex, 0, undefined);
+    out.splice(createIndex, 0, ...new Array(createCount).fill(undefined));
     return out;
-  }, [visible, createIndex]);
+  }, [visible, createIndex, createCount]);
   const error = bootError ?? view?.error;
   // Keep existing rows under source errors; a bad phrase must not clear the screen.
   const fatalError = !!error && ranked.length === 0;
@@ -268,9 +307,16 @@ export function useDerived({
   // Derive from the index so an empty filtered tree selects its sole create row.
   const createSelectedInTree =
     canCreate && activeTreeIndex >= 0 && activeTreeIndex >= treeVisible.length;
-  const createSelected = isTreeMode
+  const createSlot = isTreeMode
     ? createSelectedInTree
-    : activeIndex === createIndex;
+      ? 0
+      : -1
+    : createIndex >= 0 &&
+        activeIndex >= createIndex &&
+        activeIndex < createIndex + createCount
+      ? activeIndex - createIndex
+      : -1;
+  const createSelected = createSlot >= 0;
 
   return {
     sourceMode,
@@ -282,7 +328,9 @@ export function useDerived({
     listItems,
     rowAtIndex,
     canCreate,
+    createRows,
     createIndex,
+    createSlot,
     createSelected,
     createSelectedInTree,
     activeIndex,

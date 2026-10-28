@@ -66,12 +66,12 @@ export function createCommands({
   } = set;
   const {
     segments,
-    canCreate,
+    createRows,
     createIndex,
+    createSlot,
     createSelected,
     activeIndex,
     rowAtIndex,
-    trimmedPhrase,
     isTreeMode,
     treeVisible,
     visible,
@@ -106,9 +106,24 @@ export function createCommands({
   // client saying it wants this view closed from now on.
   const dismiss = () => close({ recordIntent: false, restoreDisplaced: false });
 
-  async function runCreate() {
-    if (!view || !canCreate) return;
-    await engine.create(view.name, trimmedPhrase);
+  /**
+   * Runs one of the create rows: by default the selected one, else the plain
+   * one (what `Shift-Enter` means) -- never a variant nobody picked.
+   */
+  async function runCreate(
+    slot = createSlot >= 0
+      ? createSlot
+      : createRows.findIndex((row) => !row.variant),
+  ) {
+    const row = createRows[slot];
+    if (!view || !row) return;
+    const variant = row.variant && {
+      label: row.variant.label,
+      prefix: row.variant.prefix,
+      icon: row.variant.icon,
+      value: row.variant.value,
+    };
+    await engine.create(view.name, row.name, variant);
     if (closesOnSelect) {
       await dismiss();
     } else {
@@ -257,8 +272,12 @@ export function createCommands({
 
   async function selectRow(index: number) {
     if (!view) return;
-    if (index === createIndex) {
-      await runCreate();
+    if (
+      createIndex >= 0 &&
+      index >= createIndex &&
+      index < createIndex + createRows.length
+    ) {
+      await runCreate(index - createIndex);
       return;
     }
     if (view.meta.hasSelect === false) return;

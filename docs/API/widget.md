@@ -281,7 +281,8 @@ Inline filtering runs before `presentation.limit`. With `search = "source"`, the
 | Option | Effect |
 | --- | --- |
 | `actions` | Row buttons. Each entry has `label`, `run(obj)`, optional `icon`, optional `when(obj)`, and optional `requireMode = "rw"` to hide it in read-only mode. Actions run independently of `onSelect`, disable while running, and refresh the view afterward. |
-| `onCreate(phrase)` | Adds a create row for a nonempty phrase with no exact match. Activate it with `Enter` or use `Shift-Enter` anywhere in the list. |
+| `onCreate(phrase, variant)` | Adds a create row for a nonempty phrase with no exact match. Activate it with `Enter` or use `Shift-Enter` anywhere in the list. `variant` is set when a `createVariants` row was picked; `phrase` is then that row's name. |
+| `createVariants(ctx)` | Extra create rows under the plain one (list and table modes, with `onCreate`). Returns a list of `{ label, prefix, icon, value }`: each row creates `prefix` followed by the phrase (unless the phrase already starts with `prefix`), shows `label` where the plain row says "Create", and is hidden when a row with that name exists. It is called with the rows, so it sees `ctx.phrase` only in `search = "source"` views. `value` is passed back to `onCreate` unchanged. |
 | `keymap` | Maps browser `KeyboardEvent.key` names to callbacks receiving the selected object. Built-in navigation keys are reserved. |
 | `segments` | Named panel subsets; each entry has a unique `label`, optional `where(obj)`, `icon`, `default`, single-character `prefix`, `placeholder`, and `helpText`. |
 | `dropdown` | Choice filter with `options`, `key(obj)` or `where(obj, value)`, and optional labels and default. |

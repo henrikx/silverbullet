@@ -1,5 +1,11 @@
 import type { ObjectValue } from "@silverbulletmd/silverbullet/type/index";
-import type { Decoration, Row, SourceCtx, ViewMeta } from "../types.ts";
+import type {
+  CreateVariant,
+  Decoration,
+  Row,
+  SourceCtx,
+  ViewMeta,
+} from "../types.ts";
 
 // Re-exported so views importing shapes from "./types.ts" don't also need
 // "../types.ts" directly.
@@ -55,7 +61,11 @@ export type BuiltinView<T = ObjectValue<Record<string, any>>> = {
    * {@link EXPAND_ROW} for a tree row that should open rather than act.
    */
   onSelect: (obj: T, ctx: { from?: string; dock?: string }) => Promise<any>;
-  onCreate?: (phrase: string) => Promise<any>;
+  /** `variant` is set when one of `createVariants`' rows was picked; `phrase`
+   * is then already that row's name. */
+  onCreate?: (phrase: string, variant?: CreateVariant) => Promise<any>;
+  /** Extra create rows under the plain one; read along with the rows. */
+  createVariants?: (ctx: SourceCtx) => Promise<CreateVariant[]>;
   /** Keyed by `KeyboardEvent.key`; see `navigator.define`'s `keymap` field. */
   keymap?: Record<
     string,

@@ -13,6 +13,7 @@ import type { RowState, RowStates } from "../../../plug-api/ui/tree_types.ts";
 import { defaultSegmentIndex, type SegmentMasks } from "./segments.ts";
 import type { DropdownMasks } from "./dropdown.ts";
 import type {
+  CreateVariant,
   DropdownOption,
   NavigatorHook,
   Row,
@@ -56,6 +57,8 @@ export type ViewState = {
   actionIcons?: (Element | undefined)[];
   segmentIcons?: (Element | undefined)[];
   createIcon?: Element;
+  /** `meta.hasCreateVariants`: the extra create rows, re-read with the rows. */
+  createVariants?: (CreateVariant & { iconNode?: Element })[];
   ctx?: SourceCtx;
   loadToken?: number;
   builtin?: boolean;
@@ -209,8 +212,12 @@ export class NavigatorEngine {
     return this.handle(viewName, "select", { obj, from, dock: this.slot });
   }
 
-  create(viewName: string, phrase: string): Promise<any> {
-    return this.handle(viewName, "create", { phrase });
+  create(
+    viewName: string,
+    phrase: string,
+    variant?: CreateVariant,
+  ): Promise<any> {
+    return this.handle(viewName, "create", { phrase, variant });
   }
 
   key(viewName: string, key: string, obj: Record<string, any>): Promise<any> {
@@ -263,6 +270,10 @@ export class NavigatorEngine {
         if (result.error === undefined) entry.contentValue = result.value;
         return true;
       }
+      // Alongside the rows, not after them: they aren't needed to show them.
+      const variants = entry.meta.hasCreateVariants
+        ? this.loadCreateVariants(entry, ctx)
+        : undefined;
       let rows: Row[] = [];
       let error: string | undefined;
       try {
@@ -286,10 +297,41 @@ export class NavigatorEngine {
         }
       }
       await this.loadRowState(entry, rows, token);
-      return entry.loadToken === token;
+      const createVariants = await variants;
+      if (entry.loadToken !== token) return false;
+      if (createVariants) entry.createVariants = createVariants;
+      return true;
     } finally {
       loading?.finish();
     }
+  }
+
+  // A failure only costs the extra rows: the plain create row doesn't need them.
+  private async loadCreateVariants(
+    entry: ViewState,
+    ctx: SourceCtx,
+  ): Promise<ViewState["createVariants"]> {
+    let variants: CreateVariant[] = [];
+    try {
+      const result = await this.handle(entry.meta.name, "createVariants", {
+        ctx,
+      });
+      if (Array.isArray(result)) {
+        variants = result.filter(
+          (v) => v && typeof v.label === "string" && v.label !== "",
+        );
+      }
+    } catch (e) {
+      console.error("navigator: create variants failed", e);
+    }
+    await this.icons.resolveIcons(variants.map((v) => v.icon));
+    return variants.map((v) => ({
+      label: v.label,
+      prefix: typeof v.prefix === "string" ? v.prefix : undefined,
+      icon: v.icon,
+      value: v.value,
+      iconNode: this.icons.iconNode(v.icon),
+    }));
   }
 
   private async loadRowState(
