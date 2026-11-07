@@ -9,6 +9,7 @@ import { EditorView } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
 import { jitter, sleep } from "@silverbulletmd/silverbullet/lib/async";
 import { deriveDbName } from "@silverbulletmd/silverbullet/lib/crypto";
+import { applyFonts } from "@silverbulletmd/silverbullet/lib/fonts";
 import {
   encodePageURI,
   encodeRef,
@@ -53,7 +54,6 @@ import { DataStoreMQ } from "./data/mq.datastore.ts";
 import { ObjectIndex } from "./data/object_index.ts";
 import { MainUI } from "./editor_ui.tsx";
 import { EventInterest } from "./event_interest.ts";
-import { applyFonts } from "@silverbulletmd/silverbullet/lib/fonts";
 import { setGitSyncStreamConnected } from "./git_sync_status.ts";
 import { isValidEditor } from "./lib/command_filters.ts";
 import { isMobileDevice } from "./lib/mobile.ts";
@@ -98,17 +98,17 @@ import { resolveASTReference } from "./space_lua.ts";
 import { SpaceStyles } from "./space_style.ts";
 import { CheckedSpacePrimitives } from "./spaces/checked_space_primitives.ts";
 import { getOrCreateClientId } from "./spaces/client_id.ts";
-import {
-  initStoragePersistence,
-  isChromium,
-  retryStoragePersistence,
-} from "./storage_persistence.ts";
 import { fsEndpoint } from "./spaces/constants.ts";
 import {
   type ChangedFile,
   EventedSpacePrimitives,
 } from "./spaces/evented_space_primitives.ts";
 import { HttpSpacePrimitives } from "./spaces/http_space_primitives.ts";
+import {
+  initStoragePersistence,
+  isChromium,
+  retryStoragePersistence,
+} from "./storage_persistence.ts";
 import { shouldFlashSyncNotification } from "./sync_notification.ts";
 import type { Command, PaletteCommand } from "./types/command.ts";
 import type {
