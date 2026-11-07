@@ -3,6 +3,7 @@ import { describe, expect, test, vi } from "vitest";
 import { extractSpaceLuaFromPageText, loadConfig } from "./boot_config.ts";
 import {
   initStoragePersistence,
+  isChromium,
   type PersistenceStorage,
   retryStoragePersistence,
 } from "./storage_persistence.ts";
@@ -179,5 +180,68 @@ describe("persistentStorageWarning config option", () => {
   test("rejects a non-boolean", async () => {
     const config = await stdConfig();
     expect(() => config.set("persistentStorageWarning", "no")).toThrow();
+  });
+});
+
+describe("Chromium browsers (decide silently, no prompt)", () => {
+  function deps(granted: boolean, persisted = false) {
+    const persist = vi.fn(async () => granted);
+    const set = vi.fn(async () => {});
+    return {
+      persist,
+      set,
+      options: {
+        storage: { persisted: async () => persisted, persist },
+        store: { get: async () => true, set },
+        storesLocally: true,
+        silent: true,
+      },
+    };
+  }
+
+  test("requests on every boot, without the once flag, and never warns", async () => {
+    const { persist, set, options } = deps(true);
+    expect(await initStoragePersistence(options)).toBe(false);
+    expect(persist).toHaveBeenCalledOnce();
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  test("logs a denial to the console and shows no warning", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { options } = deps(false);
+    expect(await initStoragePersistence(options)).toBe(false);
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn.mock.calls[0][0]).toContain("persistent storage");
+    warn.mockRestore();
+  });
+
+  test("does not request when already persistent", async () => {
+    const { persist, options } = deps(true, true);
+    expect(await initStoragePersistence(options)).toBe(false);
+    expect(persist).not.toHaveBeenCalled();
+  });
+});
+
+describe("isChromium", () => {
+  test("uses userAgentData brands when available", () => {
+    expect(
+      isChromium({
+        userAgent: "",
+        userAgentData: { brands: [{ brand: "Chromium" }] },
+      }),
+    ).toBe(true);
+  });
+  test("falls back to the user agent string", () => {
+    expect(
+      isChromium({ userAgent: "Mozilla/5.0 Chrome/140.0 Safari/537.36" }),
+    ).toBe(true);
+  });
+  test("is false for Firefox and Safari", () => {
+    expect(
+      isChromium({ userAgent: "Mozilla/5.0 Gecko/20100101 Firefox/140.0" }),
+    ).toBe(false);
+    expect(
+      isChromium({ userAgent: "Mozilla/5.0 Version/18.0 Safari/605.1.15" }),
+    ).toBe(false);
   });
 });

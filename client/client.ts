@@ -100,6 +100,7 @@ import { CheckedSpacePrimitives } from "./spaces/checked_space_primitives.ts";
 import { getOrCreateClientId } from "./spaces/client_id.ts";
 import {
   initStoragePersistence,
+  isChromium,
   retryStoragePersistence,
 } from "./storage_persistence.ts";
 import { fsEndpoint } from "./spaces/constants.ts";
@@ -465,6 +466,7 @@ export class Client {
       // Without a service worker (or headless) there is no sync, so no copy
       storesLocally:
         !this.bootConfig.disableServiceWorker && !globalThis.sbRuntime.headless,
+      silent: isChromium(globalThis.navigator),
     });
     this.ui.viewDispatch({ type: "storage-persistence-change", notPersistent });
   }
@@ -478,7 +480,7 @@ export class Client {
       });
     } else {
       this.ui.flashNotification(
-        "The browser refused persistent storage. Installing SilverBullet as an app or using it more may help.",
+        "The browser refused persistent storage. You may be able to allow it in this site's permissions.",
         "error",
       );
     }

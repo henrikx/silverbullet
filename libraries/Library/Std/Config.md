@@ -214,7 +214,7 @@ config.define("linkWriteFormat", {
 })
 
 config.define("persistentStorageWarning", {
-  description = "Show a warning icon in the top bar when the browser has not made this space's local data persistent, so it may be cleared. The browser is still asked for persistent storage once either way",
+  description = "Show a warning icon in the top bar when the browser has not made this space's local data persistent, so it may be cleared. Not shown in Chromium-based browsers, which never prompt. The browser is still asked for persistent storage either way",
   type = "boolean",
   default = true,
   ui = { category = "Sync", label = "Warn about non-persistent storage", priority = 2 },
