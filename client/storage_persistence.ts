@@ -18,13 +18,13 @@ function isSupported(
 /**
  * Asks the browser to make this space's local data persistent (so it is not
  * evicted under storage pressure), but only once per space and browser.
- * Returns whether the "storage isn't persistent" warning should be shown.
+ * Returns whether storage is (still) not persistent. Whether to warn about it
+ * is up to the caller (the `persistentStorageWarning` config option).
  */
 export async function initStoragePersistence({
   storage,
   store,
   storesLocally,
-  warningEnabled,
 }: {
   storage?: Partial<PersistenceStorage>;
   store: {
@@ -33,7 +33,6 @@ export async function initStoragePersistence({
   };
   /** Whether this client keeps a copy of the space in the browser. */
   storesLocally: boolean;
-  warningEnabled: boolean;
 }): Promise<boolean> {
   if (!storesLocally || !isSupported(storage)) {
     return false;
@@ -48,7 +47,7 @@ export async function initStoragePersistence({
       await store.set(persistRequestedKey, true);
       persisted = await storage.persist();
     }
-    return warningEnabled && !persisted;
+    return !persisted;
   } catch (e: any) {
     console.warn("Could not check persistent storage:", e.message);
     return false;

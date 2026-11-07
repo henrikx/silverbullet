@@ -128,12 +128,13 @@
   margin: 6px 6px 0 0;
   padding: 5px;
   background-color: transparent;
-  color: var(--action-button-color);
+  color: var(--alert-warning-color);
   cursor: pointer;
 }
 
 .sb-storage-warning:hover {
-  color: var(--action-button-hover-color);
+  color: var(--alert-warning-color);
+  opacity: 0.75;
 }
 
 .sb-actions:not(.open) button.expander:hover {

@@ -465,7 +465,6 @@ export class Client {
       // Without a service worker (or headless) there is no sync, so no copy
       storesLocally:
         !this.bootConfig.disableServiceWorker && !globalThis.sbRuntime.headless,
-      warningEnabled: this.config.get("persistentStorageWarning", true),
     });
     this.ui.viewDispatch({ type: "storage-persistence-change", notPersistent });
   }

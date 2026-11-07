@@ -30,7 +30,7 @@ function fakeStore(requested = false) {
   };
 }
 
-const local = { storesLocally: true, warningEnabled: true };
+const local = { storesLocally: true };
 
 describe("initStoragePersistence", () => {
   test("already persistent: no request, no warning", async () => {
@@ -122,25 +122,9 @@ describe("initStoragePersistence", () => {
         storage,
         store,
         storesLocally: false,
-        warningEnabled: true,
       }),
     ).toBe(false);
     expect(storage.persist).not.toHaveBeenCalled();
-  });
-
-  test("warning disabled hides the icon but the one automatic request still runs", async () => {
-    const storage = fakeStorage(false, false);
-    const store = fakeStore();
-    const options = {
-      storage,
-      store,
-      storesLocally: true,
-      warningEnabled: false,
-    };
-    expect(await initStoragePersistence(options)).toBe(false);
-    expect(storage.persist).toHaveBeenCalledTimes(1);
-    await initStoragePersistence(options);
-    expect(storage.persist).toHaveBeenCalledTimes(1);
   });
 });
 

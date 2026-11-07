@@ -717,7 +717,8 @@ export class MainUI {
               }),
           ]}
           onStorageWarning={
-            viewState.storageNotPersistent
+            viewState.storageNotPersistent &&
+            client.config.get("persistentStorageWarning", true)
               ? () => void client.retryStoragePersistence()
               : undefined
           }
