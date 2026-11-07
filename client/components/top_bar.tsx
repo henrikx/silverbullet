@@ -344,7 +344,6 @@ export function TopBar({
       <div className="main">
         <div className="inner">
           <div className="wrapper">
-            <StorageWarning onClick={onStorageWarning} />
             <div className="sb-page-prefix">
               {pageIconNode && (
                 <Icon node={pageIconNode} class="sb-page-decoration-icon" />
@@ -370,6 +369,7 @@ export function TopBar({
               type={progressType}
               withLabel={progressWithLabel}
             />
+            <StorageWarning onClick={onStorageWarning} />
             {mobileMenuStyle ? (
               <>
                 <ActionButtons
