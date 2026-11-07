@@ -716,6 +716,11 @@ export class MainUI {
                 };
               }),
           ]}
+          onStorageWarning={
+            viewState.storageNotPersistent
+              ? () => void client.retryStoragePersistence()
+              : undefined
+          }
           rhs={sidebarSpacer("rhs")}
           lhs={sidebarSpacer("lhs")}
           leftDock={mobileDockButton("lhs", leftDockTarget)}

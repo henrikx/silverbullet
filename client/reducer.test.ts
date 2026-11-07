@@ -108,3 +108,20 @@ describe("pick-many dialog", () => {
     ).toBe(2);
   });
 });
+
+describe("storage-persistence-change", () => {
+  test("sets and clears the storage warning flag", () => {
+    const state = { storageNotPersistent: false } as AppViewState;
+    const warned = reducer(state, {
+      type: "storage-persistence-change",
+      notPersistent: true,
+    });
+    expect(warned.storageNotPersistent).toBe(true);
+    expect(
+      reducer(warned, {
+        type: "storage-persistence-change",
+        notPersistent: false,
+      }).storageNotPersistent,
+    ).toBe(false);
+  });
+});

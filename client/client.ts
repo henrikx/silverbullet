@@ -98,6 +98,10 @@ import { resolveASTReference } from "./space_lua.ts";
 import { SpaceStyles } from "./space_style.ts";
 import { CheckedSpacePrimitives } from "./spaces/checked_space_primitives.ts";
 import { getOrCreateClientId } from "./spaces/client_id.ts";
+import {
+  initStoragePersistence,
+  retryStoragePersistence,
+} from "./storage_persistence.ts";
 import { fsEndpoint } from "./spaces/constants.ts";
 import {
   type ChangedFile,
@@ -348,6 +352,7 @@ export class Client {
     this.ui = new MainUI(this);
     this.ui.render(this.parent);
     this.registerUnsavedChangesWarning();
+    void this.initStoragePersistence();
 
     this.editorView = new EditorView({
       state: createEditorState(this, { kind: "page", pageName: "" }, "", true),
@@ -451,6 +456,33 @@ export class Client {
     });
 
     this.updatePageListCache().catch(console.error);
+  }
+
+  private async initStoragePersistence() {
+    const notPersistent = await initStoragePersistence({
+      storage: globalThis.navigator?.storage,
+      store: this.ds,
+      // Without a service worker (or headless) there is no sync, so no copy
+      storesLocally:
+        !this.bootConfig.disableServiceWorker && !globalThis.sbRuntime.headless,
+      warningEnabled: this.config.get("persistentStorageWarning", true),
+    });
+    this.ui.viewDispatch({ type: "storage-persistence-change", notPersistent });
+  }
+
+  /** Called when the storage warning icon is clicked */
+  async retryStoragePersistence() {
+    if (await retryStoragePersistence(globalThis.navigator?.storage)) {
+      this.ui.viewDispatch({
+        type: "storage-persistence-change",
+        notPersistent: false,
+      });
+    } else {
+      this.ui.flashNotification(
+        "The browser refused persistent storage. Installing SilverBullet as an app or using it more may help.",
+        "error",
+      );
+    }
   }
 
   private registerUnsavedChangesWarning() {

@@ -39,6 +39,8 @@ export type AppViewState = {
   isStandalone: boolean;
   unsavedChanges: boolean;
   isOnline: boolean;
+  // Local data may be cleared by the browser: show the warning icon
+  storageNotPersistent: boolean;
 
   progressPercentage?: number;
   progressType?: string;
@@ -98,6 +100,7 @@ export const initialViewState: AppViewState = {
   isLoading: false,
   unsavedChanges: false,
   isOnline: true,
+  storageNotPersistent: false,
   uiOptions: {
     vimMode: false,
     darkMode: undefined,
@@ -136,6 +139,7 @@ export type Action =
   | { type: "document-editor-changed" }
   | { type: "document-editor-saved" }
   | { type: "online-status-change"; isOnline: boolean }
+  | { type: "storage-persistence-change"; notPersistent: boolean }
   | { type: "update-current-page-meta"; meta: PageMeta }
   | { type: "update-page-list"; allPages: PageMeta[] }
   | {

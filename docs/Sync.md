@@ -16,6 +16,13 @@ Regardless of the client, sync happens in near-real time when connected. Saves a
 
 In the browser, Sync runs in a service worker and therefore only runs when the service worker is active. The service worker is automatically kept active for as long as you have a SilverBullet tab or window open. Some browsers slow web apps down when they are in the background or not in an active tab. This may also affect whether sync happens in the background. Most browsers (including mobile ones), keep service workers running for a little while (perhaps up to a minute), even when e.g. the screen is locked, or another app is activated.
 
+## Persistent storage
+Browsers may clear a site’s local data (including the copy of your space) under storage pressure unless the site has been granted _persistent storage_. SilverBullet asks for it once per space and browser. If the browser hasn’t granted it, a warning icon appears in the [[Top Bar]]; click it to ask again. Browsers decide on their own, and some are more likely to grant it once SilverBullet is installed as an app or has been used more. The icon only shows when the space is synced to the browser (not with `SB_DISABLE_SERVICE_WORKER`).
+
+To hide the icon (the one automatic request still happens), put this in your [[CONFIG]]:
+
+    config.set("persistentStorageWarning", false)
+
 ## Status
 If sync takes longer than a second, a black circle progress indicator will appear in the [[Top Bar]].
 

@@ -70,6 +70,11 @@ export default function reducer(
         ...state,
         isOnline: action.isOnline,
       };
+    case "storage-persistence-change":
+      return {
+        ...state,
+        storageNotPersistent: action.notPersistent,
+      };
     case "update-page-list": {
       const oldPageMeta = new Map(
         [...state.allPages].map((pm) => [pm.name, pm]),

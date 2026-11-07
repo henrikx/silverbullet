@@ -3,7 +3,7 @@ import { Icon, Input } from "@silverbulletmd/silverbullet/ui";
 import type { ComponentChildren, FunctionalComponent } from "preact";
 import { createPortal } from "preact/compat";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
-import { Sidebar } from "preact-feather";
+import { AlertTriangle, Sidebar } from "preact-feather";
 import { resolveIconNode } from "../lib/icon.ts";
 
 export type ActionButton = {
@@ -41,6 +41,21 @@ function DockButton({
       onClick={dock.onClick}
     >
       <Sidebar size={20} />
+    </button>
+  );
+}
+
+function StorageWarning({ onClick }: { onClick?: () => void }) {
+  if (!onClick) return null;
+  return (
+    <button
+      type="button"
+      className="sb-storage-warning"
+      title="Browser storage isn't persistent, so local data may be cleared. Click to request persistent storage."
+      aria-label="Browser storage isn't persistent. Request persistent storage."
+      onClick={onClick}
+    >
+      <AlertTriangle size={18} />
     </button>
   );
 }
@@ -296,6 +311,7 @@ export function TopBar({
   readOnly,
   leftDock,
   rightDock,
+  onStorageWarning,
 }: {
   pageName?: string;
   unsavedChanges: boolean;
@@ -317,6 +333,8 @@ export function TopBar({
   readOnly: boolean;
   leftDock?: MobileDockButton;
   rightDock?: MobileDockButton;
+  /** Set to show the non-persistent storage warning icon */
+  onStorageWarning?: () => void;
 }) {
   const pageIconNode = resolveIconNode(pageIcon);
   return (
@@ -326,6 +344,7 @@ export function TopBar({
       <div className="main">
         <div className="inner">
           <div className="wrapper">
+            <StorageWarning onClick={onStorageWarning} />
             <div className="sb-page-prefix">
               {pageIconNode && (
                 <Icon node={pageIconNode} class="sb-page-decoration-icon" />
